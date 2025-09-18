@@ -1,0 +1,1963 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BRANDCORP - Connect Creators with Brands</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .gradient-bg { background: linear-gradient(135deg, #1e3a8a 0%, #000000 100%); }
+        .card-hover { transition: all 0.3s ease; }
+        .card-hover:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
+        .social-icon { transition: all 0.3s ease; }
+        .social-icon:hover { transform: scale(1.1); }
+        .animate-float { animation: float 6s ease-in-out infinite; }
+        @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-20px); } }
+        .brand-blue { color: #1e3a8a; }
+        .brand-bg-blue { background-color: #1e3a8a; }
+        .brand-border-blue { border-color: #1e3a8a; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // Mock data storage
+        const mockUsers = {
+            creators: [
+                {
+                    id: 1,
+                    username: 'fashionista_maya',
+                    fullName: 'Maya Sharma',
+                    email: 'maya@example.com',
+                    password: 'password123',
+                    category: 'fashion',
+                    bio: 'Fashion enthusiast sharing daily outfit inspiration',
+                    location: 'Mumbai, India',
+                    instagramFollowers: 150000,
+                    youtubeSubscribers: 50000,
+                    avgEngagement: 4.5,
+                    priceRange: '15000-50000',
+                    contentType: 'Photos, Reels, Stories',
+                    status: 'approved',
+                    joinedDate: '2024-01-15'
+                },
+                {
+                    id: 2,
+                    username: 'tech_guru_raj',
+                    fullName: 'Raj Patel',
+                    email: 'raj@example.com',
+                    password: 'password123',
+                    category: 'tech',
+                    bio: 'Technology reviewer and gadget enthusiast',
+                    location: 'Bangalore, India',
+                    instagramFollowers: 80000,
+                    youtubeSubscribers: 200000,
+                    avgEngagement: 6.2,
+                    priceRange: '50000+',
+                    contentType: 'Videos, Reviews, Tutorials',
+                    status: 'approved',
+                    joinedDate: '2024-01-20'
+                },
+                {
+                    id: 3,
+                    username: 'beauty_queen_sara',
+                    fullName: 'Sara Khan',
+                    email: 'sara@example.com',
+                    password: 'password123',
+                    category: 'beauty',
+                    bio: 'Beauty and skincare enthusiast',
+                    location: 'Delhi, India',
+                    instagramFollowers: 120000,
+                    youtubeSubscribers: 30000,
+                    avgEngagement: 5.8,
+                    priceRange: '10000-30000',
+                    contentType: 'Photos, Tutorials, Reviews',
+                    status: 'pending',
+                    joinedDate: '2024-02-01'
+                }
+            ],
+            brands: [
+                {
+                    id: 1,
+                    companyName: 'StyleCorp',
+                    contactPerson: 'Priya Singh',
+                    email: 'priya@stylecorp.com',
+                    password: 'brand123',
+                    industry: 'fashion',
+                    campaignBudget: '500000-1000000',
+                    status: 'approved',
+                    joinedDate: '2024-01-10'
+                },
+                {
+                    id: 2,
+                    companyName: 'TechGear Pro',
+                    contactPerson: 'Amit Sharma',
+                    email: 'amit@techgear.com',
+                    password: 'brand123',
+                    industry: 'technology',
+                    campaignBudget: '1000000+',
+                    status: 'pending',
+                    joinedDate: '2024-02-05'
+                }
+            ],
+            admins: [
+                {
+                    id: 1,
+                    fullName: 'Admin User',
+                    email: 'admin@brandcorp.com',
+                    password: 'admin123',
+                    role: 'super_admin'
+                }
+            ]
+        };
+
+        // Partnership requests storage
+        const partnershipRequests = [
+            {
+                id: 1,
+                brandId: 1,
+                creatorId: 1,
+                brandName: 'StyleCorp',
+                creatorName: 'Maya Sharma',
+                campaignTitle: 'Winter Fashion Collection',
+                budget: '₹25,000',
+                status: 'pending',
+                requestDate: '2024-02-10',
+                message: 'We would like to collaborate for our winter collection launch.'
+            },
+            {
+                id: 2,
+                brandId: 1,
+                creatorId: 2,
+                brandName: 'StyleCorp',
+                creatorName: 'Raj Patel',
+                campaignTitle: 'Tech Review Campaign',
+                budget: '₹40,000',
+                status: 'approved',
+                requestDate: '2024-02-08',
+                message: 'Looking for tech product reviews and unboxing videos.'
+            }
+        ];
+
+        // Auth Context
+        const AuthContext = React.createContext();
+
+        const AuthProvider = ({ children }) => {
+            const [user, setUser] = useState(null);
+            const [userType, setUserType] = useState(null);
+
+            const login = (email, password, type) => {
+                const users = mockUsers[type];
+                const foundUser = users.find(u => u.email === email && u.password === password);
+                if (foundUser) {
+                    setUser(foundUser);
+                    setUserType(type);
+                    return true;
+                }
+                return false;
+            };
+
+            const register = (userData, type) => {
+                const newUser = {
+                    id: Date.now(),
+                    ...userData,
+                    status: 'pending',
+                    joinedDate: new Date().toISOString().split('T')[0]
+                };
+                mockUsers[type].push(newUser);
+                setUser(newUser);
+                setUserType(type);
+                return true;
+            };
+
+            const logout = () => {
+                setUser(null);
+                setUserType(null);
+            };
+
+            return (
+                <AuthContext.Provider value={{ user, userType, login, register, logout }}>
+                    {children}
+                </AuthContext.Provider>
+            );
+        };
+
+        // Navigation Component
+        const Navigation = ({ currentPage, setCurrentPage }) => {
+            const { user, userType, logout } = React.useContext(AuthContext);
+            const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+            const publicNavItems = [
+                { id: 'home', label: 'Home', icon: 'fas fa-home' },
+                { id: 'how-it-works', label: 'How It Works', icon: 'fas fa-cogs' },
+                { id: 'contact', label: 'Contact', icon: 'fas fa-envelope' }
+            ];
+
+            const authNavItems = user ? [
+                { id: 'dashboard', label: 'Dashboard', icon: 'fas fa-tachometer-alt' },
+                { id: 'profile', label: 'Profile', icon: 'fas fa-user' }
+            ] : [
+                { id: 'login', label: 'Login', icon: 'fas fa-sign-in-alt' },
+                { id: 'register', label: 'Register', icon: 'fas fa-user-plus' }
+            ];
+
+            const navItems = [...publicNavItems, ...authNavItems];
+
+            const handleLogout = () => {
+                logout();
+                setCurrentPage('home');
+            };
+
+            return (
+                <nav className="bg-black shadow-lg fixed w-full top-0 z-50">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div className="flex justify-between h-16">
+                            <div className="flex items-center">
+                                <div className="flex-shrink-0 flex items-center">
+                                    <i className="fas fa-link text-2xl text-blue-500 mr-2"></i>
+                                    <span className="text-2xl font-bold text-white">BRANDCORP</span>
+                                    {user && userType === 'admins' && (
+                                        <span className="ml-3 px-2 py-1 bg-red-600 text-white text-xs rounded-full">ADMIN</span>
+                                    )}
+                                </div>
+                            </div>
+                            
+                            <div className="hidden md:flex items-center space-x-8">
+                                {navItems.map(item => (
+                                    <button
+                                        key={item.id}
+                                        onClick={() => setCurrentPage(item.id)}
+                                        className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                                            currentPage === item.id 
+                                                ? 'text-blue-400 bg-gray-800' 
+                                                : 'text-gray-300 hover:text-blue-400 hover:bg-gray-800'
+                                        }`}
+                                    >
+                                        <i className={`${item.icon} mr-2`}></i>
+                                        {item.label}
+                                    </button>
+                                ))}
+                                {user && (
+                                    <button
+                                        onClick={handleLogout}
+                                        className="flex items-center px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:text-red-400 hover:bg-gray-800 transition-colors"
+                                    >
+                                        <i className="fas fa-sign-out-alt mr-2"></i>
+                                        Logout
+                                    </button>
+                                )}
+                            </div>
+
+                            <div className="md:hidden flex items-center">
+                                <button
+                                    onClick={() => setIsMenuOpen(!isMenuOpen)}
+                                    className="text-gray-300 hover:text-blue-400 focus:outline-none"
+                                >
+                                    <i className={`fas ${isMenuOpen ? 'fa-times' : 'fa-bars'} text-xl`}></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {isMenuOpen && (
+                        <div className="md:hidden bg-black border-t border-gray-800">
+                            <div className="px-2 pt-2 pb-3 space-y-1">
+                                {navItems.map(item => (
+                                    <button
+                                        key={item.id}
+                                        onClick={() => {
+                                            setCurrentPage(item.id);
+                                            setIsMenuOpen(false);
+                                        }}
+                                        className={`flex items-center w-full px-3 py-2 rounded-md text-base font-medium ${
+                                            currentPage === item.id 
+                                                ? 'text-blue-400 bg-gray-800' 
+                                                : 'text-gray-300 hover:text-blue-400 hover:bg-gray-800'
+                                        }`}
+                                    >
+                                        <i className={`${item.icon} mr-3`}></i>
+                                        {item.label}
+                                    </button>
+                                ))}
+                                {user && (
+                                    <button
+                                        onClick={() => {
+                                            handleLogout();
+                                            setIsMenuOpen(false);
+                                        }}
+                                        className="flex items-center w-full px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-red-400 hover:bg-gray-800"
+                                    >
+                                        <i className="fas fa-sign-out-alt mr-3"></i>
+                                        Logout
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </nav>
+            );
+        };
+
+        // Login Component
+        const LoginPage = ({ setCurrentPage }) => {
+            const { login } = React.useContext(AuthContext);
+            const [formData, setFormData] = useState({
+                email: '',
+                password: '',
+                userType: 'creators'
+            });
+            const [error, setError] = useState('');
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                const success = login(formData.email, formData.password, formData.userType);
+                if (success) {
+                    setCurrentPage('dashboard');
+                } else {
+                    setError('Invalid credentials. Please try again.');
+                }
+            };
+
+            return (
+                <div className="pt-16 min-h-screen bg-gray-900 flex items-center justify-center">
+                    <div className="max-w-md w-full mx-4">
+                        <div className="bg-black rounded-xl shadow-2xl p-8 border border-gray-800">
+                            <div className="text-center mb-8">
+                                <i className="fas fa-sign-in-alt text-4xl text-blue-500 mb-4"></i>
+                                <h1 className="text-3xl font-bold text-white mb-2">Welcome Back</h1>
+                                <p className="text-gray-400">Sign in to your BRANDCORP account</p>
+                            </div>
+
+                            {error && (
+                                <div className="bg-red-900 border border-red-700 text-red-300 px-4 py-3 rounded mb-6">
+                                    {error}
+                                </div>
+                            )}
+
+                            <form onSubmit={handleSubmit} className="space-y-6">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-300 mb-2">Account Type</label>
+                                    <select
+                                        className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        value={formData.userType}
+                                        onChange={(e) => setFormData({...formData, userType: e.target.value})}
+                                    >
+                                        <option value="creators">Creator</option>
+                                        <option value="brands">Brand</option>
+                                        <option value="admins">Admin</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-300 mb-2">Email</label>
+                                    <input
+                                        type="email"
+                                        required
+                                        className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        value={formData.email}
+                                        onChange={(e) => setFormData({...formData, email: e.target.value})}
+                                        placeholder="Enter your email"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-300 mb-2">Password</label>
+                                    <input
+                                        type="password"
+                                        required
+                                        className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        value={formData.password}
+                                        onChange={(e) => setFormData({...formData, password: e.target.value})}
+                                        placeholder="Enter your password"
+                                    />
+                                </div>
+
+                                <button
+                                    type="submit"
+                                    className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+                                >
+                                    Sign In
+                                </button>
+                            </form>
+
+                            <div className="mt-6 text-center">
+                                <p className="text-gray-400">
+                                    Don't have an account?{' '}
+                                    <button
+                                        onClick={() => setCurrentPage('register')}
+                                        className="text-blue-400 hover:text-blue-300 font-medium"
+                                    >
+                                        Sign up here
+                                    </button>
+                                </p>
+                            </div>
+
+                            <div className="mt-6 p-4 bg-gray-800 rounded-lg">
+                                <p className="text-sm text-gray-400 mb-2">Demo Accounts:</p>
+                                <p className="text-xs text-gray-500">Creator: maya@example.com / password123</p>
+                                <p className="text-xs text-gray-500">Brand: priya@stylecorp.com / brand123</p>
+                                <p className="text-xs text-gray-500">Admin: admin@brandcorp.com / admin123</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // Register Component
+        const RegisterPage = ({ setCurrentPage }) => {
+            const { register } = React.useContext(AuthContext);
+            const [userType, setUserType] = useState('creators');
+            const [formData, setFormData] = useState({
+                email: '',
+                password: '',
+                confirmPassword: ''
+            });
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                if (formData.password !== formData.confirmPassword) {
+                    alert('Passwords do not match!');
+                    return;
+                }
+                
+                const success = register(formData, userType);
+                if (success) {
+                    alert('Registration successful! Your account is pending admin approval.');
+                    setCurrentPage('dashboard');
+                }
+            };
+
+            return (
+                <div className="pt-16 min-h-screen bg-gray-900">
+                    <div className="max-w-2xl mx-auto px-4 py-12">
+                        <div className="text-center mb-8">
+                            <h1 className="text-4xl font-bold text-white mb-4">Join BRANDCORP</h1>
+                            <p className="text-xl text-gray-400">Choose your account type to get started</p>
+                        </div>
+
+                        <div className="bg-black rounded-xl shadow-2xl p-8 border border-gray-800">
+                            <div className="mb-8">
+                                <label className="block text-sm font-medium text-gray-300 mb-4">I want to join as:</label>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => setUserType('creators')}
+                                        className={`p-6 rounded-lg border-2 transition-colors ${
+                                            userType === 'creators'
+                                                ? 'border-blue-500 bg-blue-900 bg-opacity-20'
+                                                : 'border-gray-700 hover:border-gray-600'
+                                        }`}
+                                    >
+                                        <i className="fas fa-users text-3xl text-blue-400 mb-3"></i>
+                                        <h3 className="text-lg font-semibold text-white mb-2">Creator</h3>
+                                        <p className="text-sm text-gray-400">Share content and collaborate with brands</p>
+                                    </button>
+                                    
+                                    <button
+                                        type="button"
+                                        onClick={() => setUserType('brands')}
+                                        className={`p-6 rounded-lg border-2 transition-colors ${
+                                            userType === 'brands'
+                                                ? 'border-blue-500 bg-blue-900 bg-opacity-20'
+                                                : 'border-gray-700 hover:border-gray-600'
+                                        }`}
+                                    >
+                                        <i className="fas fa-building text-3xl text-blue-400 mb-3"></i>
+                                        <h3 className="text-lg font-semibold text-white mb-2">Brand</h3>
+                                        <p className="text-sm text-gray-400">Find creators for your campaigns</p>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <form onSubmit={handleSubmit} className="space-y-6">
+                                <div className="grid md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                                            {userType === 'creators' ? 'Full Name' : 'Contact Person'} *
+                                        </label>
+                                        <input
+                                            type="text"
+                                            required
+                                            className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            value={formData.fullName || formData.contactPerson || ''}
+                                            onChange={(e) => setFormData({
+                                                ...formData, 
+                                                [userType === 'creators' ? 'fullName' : 'contactPerson']: e.target.value
+                                            })}
+                                        />
+                                    </div>
+                                    
+                                    {userType === 'creators' ? (
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-300 mb-2">Username *</label>
+                                            <input
+                                                type="text"
+                                                required
+                                                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                value={formData.username || ''}
+                                                onChange={(e) => setFormData({...formData, username: e.target.value})}
+                                            />
+                                        </div>
+                                    ) : (
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-300 mb-2">Company Name *</label>
+                                            <input
+                                                type="text"
+                                                required
+                                                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                value={formData.companyName || ''}
+                                                onChange={(e) => setFormData({...formData, companyName: e.target.value})}
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-300 mb-2">Email *</label>
+                                    <input
+                                        type="email"
+                                        required
+                                        className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        value={formData.email}
+                                        onChange={(e) => setFormData({...formData, email: e.target.value})}
+                                    />
+                                </div>
+
+                                <div className="grid md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-300 mb-2">Password *</label>
+                                        <input
+                                            type="password"
+                                            required
+                                            className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            value={formData.password}
+                                            onChange={(e) => setFormData({...formData, password: e.target.value})}
+                                        />
+                                    </div>
+                                    
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-300 mb-2">Confirm Password *</label>
+                                        <input
+                                            type="password"
+                                            required
+                                            className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            value={formData.confirmPassword}
+                                            onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
+                                        />
+                                    </div>
+                                </div>
+
+                                <button
+                                    type="submit"
+                                    className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+                                >
+                                    Create Account
+                                </button>
+                            </form>
+
+                            <div className="mt-6 text-center">
+                                <p className="text-gray-400">
+                                    Already have an account?{' '}
+                                    <button
+                                        onClick={() => setCurrentPage('login')}
+                                        className="text-blue-400 hover:text-blue-300 font-medium"
+                                    >
+                                        Sign in here
+                                    </button>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // Admin Dashboard
+        const AdminDashboard = () => {
+            const { user } = React.useContext(AuthContext);
+            const [activeTab, setActiveTab] = useState('overview');
+            const [requests, setRequests] = useState(partnershipRequests);
+
+            const stats = {
+                totalUsers: mockUsers.creators.length + mockUsers.brands.length,
+                pendingApprovals: mockUsers.creators.filter(c => c.status === 'pending').length + 
+                                 mockUsers.brands.filter(b => b.status === 'pending').length,
+                activePartnerships: requests.filter(r => r.status === 'approved').length,
+                totalRevenue: 2500000
+            };
+
+            const handleApproveUser = (userId, userType) => {
+                const user = mockUsers[userType].find(u => u.id === userId);
+                if (user) {
+                    user.status = 'approved';
+                    alert(`${user.fullName || user.companyName} has been approved!`);
+                }
+            };
+
+            const handleRejectUser = (userId, userType) => {
+                const user = mockUsers[userType].find(u => u.id === userId);
+                if (user) {
+                    user.status = 'rejected';
+                    alert(`${user.fullName || user.companyName} has been rejected.`);
+                }
+            };
+
+            const handlePartnershipAction = (requestId, action) => {
+                const request = requests.find(r => r.id === requestId);
+                if (request) {
+                    request.status = action;
+                    setRequests([...requests]);
+                    alert(`Partnership request ${action}!`);
+                }
+            };
+
+            return (
+                <div className="pt-16 min-h-screen bg-gray-900">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                        <div className="mb-8">
+                            <h1 className="text-3xl font-bold text-white mb-2">Admin Dashboard</h1>
+                            <p className="text-gray-400">Welcome back, {user?.fullName}! Manage your platform here.</p>
+                        </div>
+
+                        {/* Stats Cards */}
+                        <div className="grid md:grid-cols-4 gap-6 mb-8">
+                            <div className="bg-black rounded-xl p-6 border border-gray-800">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-gray-400 text-sm">Total Users</p>
+                                        <p className="text-2xl font-bold text-white">{stats.totalUsers}</p>
+                                    </div>
+                                    <i className="fas fa-users text-2xl text-blue-500"></i>
+                                </div>
+                            </div>
+                            
+                            <div className="bg-black rounded-xl p-6 border border-gray-800">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-gray-400 text-sm">Pending Approvals</p>
+                                        <p className="text-2xl font-bold text-white">{stats.pendingApprovals}</p>
+                                    </div>
+                                    <i className="fas fa-clock text-2xl text-yellow-500"></i>
+                                </div>
+                            </div>
+                            
+                            <div className="bg-black rounded-xl p-6 border border-gray-800">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-gray-400 text-sm">Active Partnerships</p>
+                                        <p className="text-2xl font-bold text-white">{stats.activePartnerships}</p>
+                                    </div>
+                                    <i className="fas fa-handshake text-2xl text-green-500"></i>
+                                </div>
+                            </div>
+                            
+                            <div className="bg-black rounded-xl p-6 border border-gray-800">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-gray-400 text-sm">Platform Revenue</p>
+                                        <p className="text-2xl font-bold text-white">₹{stats.totalRevenue.toLocaleString()}</p>
+                                    </div>
+                                    <i className="fas fa-rupee-sign text-2xl text-purple-500"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Tabs */}
+                        <div className="bg-black rounded-xl border border-gray-800">
+                            <div className="border-b border-gray-800">
+                                <nav className="flex space-x-8 px-6">
+                                    {['overview', 'user-management', 'partnerships', 'analytics'].map(tab => (
+                                        <button
+                                            key={tab}
+                                            onClick={() => setActiveTab(tab)}
+                                            className={`py-4 px-2 border-b-2 font-medium text-sm capitalize ${
+                                                activeTab === tab
+                                                    ? 'border-blue-500 text-blue-400'
+                                                    : 'border-transparent text-gray-400 hover:text-gray-300'
+                                            }`}
+                                        >
+                                            {tab.replace('-', ' ')}
+                                        </button>
+                                    ))}
+                                </nav>
+                            </div>
+
+                            <div className="p-6">
+                                {activeTab === 'overview' && (
+                                    <div>
+                                        <h3 className="text-xl font-semibold text-white mb-4">Recent Activity</h3>
+                                        <div className="space-y-4">
+                                            <div className="flex items-center p-4 bg-gray-800 rounded-lg">
+                                                <i className="fas fa-user-plus text-green-500 mr-3"></i>
+                                                <div>
+                                                    <p className="text-white">New creator Sara Khan registered</p>
+                                                    <p className="text-gray-400 text-sm">Pending approval - Beauty category</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center p-4 bg-gray-800 rounded-lg">
+                                                <i className="fas fa-building text-blue-500 mr-3"></i>
+                                                <div>
+                                                    <p className="text-white">New brand TechGear Pro registered</p>
+                                                    <p className="text-gray-400 text-sm">Pending approval - Technology industry</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center p-4 bg-gray-800 rounded-lg">
+                                                <i className="fas fa-handshake text-purple-500 mr-3"></i>
+                                                <div>
+                                                    <p className="text-white">Partnership request from StyleCorp</p>
+                                                    <p className="text-gray-400 text-sm">Wants to collaborate with Maya Sharma</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {activeTab === 'user-management' && (
+                                    <div>
+                                        <h3 className="text-xl font-semibold text-white mb-6">User Management</h3>
+                                        
+                                        {/* Pending Creators */}
+                                        <div className="mb-8">
+                                            <h4 className="text-lg font-medium text-white mb-4">Pending Creator Approvals</h4>
+                                            <div className="space-y-4">
+                                                {mockUsers.creators.filter(c => c.status === 'pending').map(creator => (
+                                                    <div key={creator.id} className="bg-gray-800 rounded-lg p-4">
+                                                        <div className="flex justify-between items-start">
+                                                            <div className="flex-1">
+                                                                <h5 className="text-white font-medium">{creator.fullName}</h5>
+                                                                <p className="text-gray-400 text-sm">@{creator.username}</p>
+                                                                <p className="text-gray-400 text-sm">{creator.email}</p>
+                                                                <p className="text-gray-400 text-sm">Category: {creator.category}</p>
+                                                                <p className="text-gray-400 text-sm">Instagram: {creator.instagramFollowers?.toLocaleString()} followers</p>
+                                                            </div>
+                                                            <div className="flex space-x-2">
+                                                                <button
+                                                                    onClick={() => handleApproveUser(creator.id, 'creators')}
+                                                                    className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                                                                >
+                                                                    Approve
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleRejectUser(creator.id, 'creators')}
+                                                                    className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+                                                                >
+                                                                    Reject
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* Pending Brands */}
+                                        <div>
+                                            <h4 className="text-lg font-medium text-white mb-4">Pending Brand Approvals</h4>
+                                            <div className="space-y-4">
+                                                {mockUsers.brands.filter(b => b.status === 'pending').map(brand => (
+                                                    <div key={brand.id} className="bg-gray-800 rounded-lg p-4">
+                                                        <div className="flex justify-between items-start">
+                                                            <div className="flex-1">
+                                                                <h5 className="text-white font-medium">{brand.companyName}</h5>
+                                                                <p className="text-gray-400 text-sm">Contact: {brand.contactPerson}</p>
+                                                                <p className="text-gray-400 text-sm">{brand.email}</p>
+                                                                <p className="text-gray-400 text-sm">Industry: {brand.industry}</p>
+                                                                <p className="text-gray-400 text-sm">Budget: ₹{brand.campaignBudget}</p>
+                                                            </div>
+                                                            <div className="flex space-x-2">
+                                                                <button
+                                                                    onClick={() => handleApproveUser(brand.id, 'brands')}
+                                                                    className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                                                                >
+                                                                    Approve
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleRejectUser(brand.id, 'brands')}
+                                                                    className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+                                                                >
+                                                                    Reject
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {activeTab === 'partnerships' && (
+                                    <div>
+                                        <h3 className="text-xl font-semibold text-white mb-6">Partnership Management</h3>
+                                        <div className="space-y-4">
+                                            {requests.map(request => (
+                                                <div key={request.id} className="bg-gray-800 rounded-lg p-6">
+                                                    <div className="flex justify-between items-start mb-4">
+                                                        <div className="flex-1">
+                                                            <h4 className="text-lg font-medium text-white">{request.campaignTitle}</h4>
+                                                            <p className="text-gray-400">Brand: {request.brandName}</p>
+                                                            <p className="text-gray-400">Creator: {request.creatorName}</p>
+                                                            <p className="text-gray-400">Budget: {request.budget}</p>
+                                                            <p className="text-gray-400">Date: {request.requestDate}</p>
+                                                        </div>
+                                                        <span className={`px-3 py-1 rounded-full text-sm ${
+                                                            request.status === 'pending' ? 'bg-yellow-900 text-yellow-300' :
+                                                            request.status === 'approved' ? 'bg-green-900 text-green-300' :
+                                                            'bg-red-900 text-red-300'
+                                                        }`}>
+                                                            {request.status}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-gray-300 mb-4">{request.message}</p>
+                                                    {request.status === 'pending' && (
+                                                        <div className="flex space-x-3">
+                                                            <button
+                                                                onClick={() => handlePartnershipAction(request.id, 'approved')}
+                                                                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                                                            >
+                                                                Approve Partnership
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handlePartnershipAction(request.id, 'rejected')}
+                                                                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+                                                            >
+                                                                Reject Partnership
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {activeTab === 'analytics' && (
+                                    <div>
+                                        <h3 className="text-xl font-semibold text-white mb-6">Platform Analytics</h3>
+                                        <div className="grid md:grid-cols-2 gap-6">
+                                            <div className="bg-gray-800 rounded-lg p-6">
+                                                <h4 className="text-lg font-medium text-white mb-4">User Growth</h4>
+                                                <div className="h-32 flex items-center justify-center text-gray-400">
+                                                    <i className="fas fa-chart-line text-4xl"></i>
+                                                    <span className="ml-3">User growth chart would go here</span>
+                                                </div>
+                                            </div>
+                                            <div className="bg-gray-800 rounded-lg p-6">
+                                                <h4 className="text-lg font-medium text-white mb-4">Revenue Analytics</h4>
+                                                <div className="h-32 flex items-center justify-center text-gray-400">
+                                                    <i className="fas fa-chart-bar text-4xl"></i>
+                                                    <span className="ml-3">Revenue chart would go here</span>
+                                                </div>
+                                            </div>
+                                            <div className="bg-gray-800 rounded-lg p-6">
+                                                <h4 className="text-lg font-medium text-white mb-4">Partnership Success Rate</h4>
+                                                <div className="h-32 flex items-center justify-center text-gray-400">
+                                                    <i className="fas fa-chart-pie text-4xl"></i>
+                                                    <span className="ml-3">Success rate chart would go here</span>
+                                                </div>
+                                            </div>
+                                            <div className="bg-gray-800 rounded-lg p-6">
+                                                <h4 className="text-lg font-medium text-white mb-4">Category Distribution</h4>
+                                                <div className="h-32 flex items-center justify-center text-gray-400">
+                                                    <i className="fas fa-chart-donut text-4xl"></i>
+                                                    <span className="ml-3">Category chart would go here</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // Creator Dashboard
+        const CreatorDashboard = () => {
+            const { user } = React.useContext(AuthContext);
+            const [activeTab, setActiveTab] = useState('overview');
+
+            if (user?.status === 'pending') {
+                return (
+                    <div className="pt-16 min-h-screen bg-gray-900 flex items-center justify-center">
+                        <div className="max-w-md w-full mx-4">
+                            <div className="bg-black rounded-xl shadow-2xl p-8 border border-gray-800 text-center">
+                                <i className="fas fa-clock text-4xl text-yellow-500 mb-4"></i>
+                                <h1 className="text-2xl font-bold text-white mb-4">Account Pending Approval</h1>
+                                <p className="text-gray-400 mb-6">
+                                    Your creator account is currently under review by our admin team. 
+                                    You'll receive an email notification once your account is approved.
+                                </p>
+                                <p className="text-sm text-gray-500">
+                                    This usually takes 24-48 hours.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            const stats = {
+                totalFollowers: (user?.instagramFollowers || 0) + (user?.youtubeSubscribers || 0),
+                avgEngagement: user?.avgEngagement || 0,
+                activeCampaigns: 3,
+                totalEarnings: 45000
+            };
+
+            const campaigns = [
+                { id: 1, brand: 'FashionHub', status: 'Active', payment: '₹15,000', deadline: '2024-02-15' },
+                { id: 2, brand: 'TechGear', status: 'Completed', payment: '₹25,000', deadline: '2024-01-30' },
+                { id: 3, brand: 'StyleCorp', status: 'Pending', payment: '₹20,000', deadline: '2024-02-20' }
+            ];
+
+            return (
+                <div className="pt-16 min-h-screen bg-gray-900">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                        <div className="mb-8">
+                            <h1 className="text-3xl font-bold text-white mb-2">Welcome back, {user?.fullName}!</h1>
+                            <p className="text-gray-400">Here's your creator dashboard overview</p>
+                        </div>
+
+                        {/* Stats Cards */}
+                        <div className="grid md:grid-cols-4 gap-6 mb-8">
+                            <div className="bg-black rounded-xl p-6 border border-gray-800">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-gray-400 text-sm">Total Followers</p>
+                                        <p className="text-2xl font-bold text-white">{stats.totalFollowers.toLocaleString()}</p>
+                                    </div>
+                                    <i className="fas fa-users text-2xl text-blue-500"></i>
+                                </div>
+                            </div>
+                            
+                            <div className="bg-black rounded-xl p-6 border border-gray-800">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-gray-400 text-sm">Avg Engagement</p>
+                                        <p className="text-2xl font-bold text-white">{stats.avgEngagement}%</p>
+                                    </div>
+                                    <i className="fas fa-chart-line text-2xl text-green-500"></i>
+                                </div>
+                            </div>
+                            
+                            <div className="bg-black rounded-xl p-6 border border-gray-800">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-gray-400 text-sm">Active Campaigns</p>
+                                        <p className="text-2xl font-bold text-white">{stats.activeCampaigns}</p>
+                                    </div>
+                                    <i className="fas fa-bullhorn text-2xl text-yellow-500"></i>
+                                </div>
+                            </div>
+                            
+                            <div className="bg-black rounded-xl p-6 border border-gray-800">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-gray-400 text-sm">Total Earnings</p>
+                                        <p className="text-2xl font-bold text-white">₹{stats.totalEarnings.toLocaleString()}</p>
+                                    </div>
+                                    <i className="fas fa-rupee-sign text-2xl text-purple-500"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Tabs */}
+                        <div className="bg-black rounded-xl border border-gray-800">
+                            <div className="border-b border-gray-800">
+                                <nav className="flex space-x-8 px-6">
+                                    {['overview', 'campaigns', 'analytics', 'settings'].map(tab => (
+                                        <button
+                                            key={tab}
+                                            onClick={() => setActiveTab(tab)}
+                                            className={`py-4 px-2 border-b-2 font-medium text-sm capitalize ${
+                                                activeTab === tab
+                                                    ? 'border-blue-500 text-blue-400'
+                                                    : 'border-transparent text-gray-400 hover:text-gray-300'
+                                            }`}
+                                        >
+                                            {tab}
+                                        </button>
+                                    ))}
+                                </nav>
+                            </div>
+
+                            <div className="p-6">
+                                {activeTab === 'overview' && (
+                                    <div>
+                                        <h3 className="text-xl font-semibold text-white mb-4">Recent Activity</h3>
+                                        <div className="space-y-4">
+                                            <div className="flex items-center p-4 bg-gray-800 rounded-lg">
+                                                <i className="fas fa-check-circle text-green-500 mr-3"></i>
+                                                <div>
+                                                    <p className="text-white">Campaign completed for TechGear</p>
+                                                    <p className="text-gray-400 text-sm">Payment of ₹25,000 received</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center p-4 bg-gray-800 rounded-lg">
+                                                <i className="fas fa-star text-yellow-500 mr-3"></i>
+                                                <div>
+                                                    <p className="text-white">New collaboration request from StyleCorp</p>
+                                                    <p className="text-gray-400 text-sm">Review and respond by tomorrow</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {activeTab === 'campaigns' && (
+                                    <div>
+                                        <h3 className="text-xl font-semibold text-white mb-4">My Campaigns</h3>
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full">
+                                                <thead>
+                                                    <tr className="border-b border-gray-800">
+                                                        <th className="text-left py-3 px-4 text-gray-400">Brand</th>
+                                                        <th className="text-left py-3 px-4 text-gray-400">Status</th>
+                                                        <th className="text-left py-3 px-4 text-gray-400">Payment</th>
+                                                        <th className="text-left py-3 px-4 text-gray-400">Deadline</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {campaigns.map(campaign => (
+                                                        <tr key={campaign.id} className="border-b border-gray-800">
+                                                            <td className="py-3 px-4 text-white">{campaign.brand}</td>
+                                                            <td className="py-3 px-4">
+                                                                <span className={`px-2 py-1 rounded-full text-xs ${
+                                                                    campaign.status === 'Active' ? 'bg-green-900 text-green-300' :
+                                                                    campaign.status === 'Completed' ? 'bg-blue-900 text-blue-300' :
+                                                                    'bg-yellow-900 text-yellow-300'
+                                                                }`}>
+                                                                    {campaign.status}
+                                                                </span>
+                                                            </td>
+                                                            <td className="py-3 px-4 text-white">{campaign.payment}</td>
+                                                            <td className="py-3 px-4 text-gray-400">{campaign.deadline}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {activeTab === 'analytics' && (
+                                    <div>
+                                        <h3 className="text-xl font-semibold text-white mb-4">Performance Analytics</h3>
+                                        <div className="grid md:grid-cols-2 gap-6">
+                                            <div className="bg-gray-800 rounded-lg p-6">
+                                                <h4 className="text-lg font-medium text-white mb-4">Engagement Trends</h4>
+                                                <div className="h-32 flex items-center justify-center text-gray-400">
+                                                    <i className="fas fa-chart-area text-4xl"></i>
+                                                    <span className="ml-3">Chart visualization would go here</span>
+                                                </div>
+                                            </div>
+                                            <div className="bg-gray-800 rounded-lg p-6">
+                                                <h4 className="text-lg font-medium text-white mb-4">Revenue Growth</h4>
+                                                <div className="h-32 flex items-center justify-center text-gray-400">
+                                                    <i className="fas fa-chart-bar text-4xl"></i>
+                                                    <span className="ml-3">Chart visualization would go here</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {activeTab === 'settings' && (
+                                    <div>
+                                        <h3 className="text-xl font-semibold text-white mb-4">Account Settings</h3>
+                                        <div className="space-y-6">
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-300 mb-2">Bio</label>
+                                                <textarea
+                                                    rows="3"
+                                                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                    defaultValue={user?.bio}
+                                                ></textarea>
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-300 mb-2">Price Range</label>
+                                                <select className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                                    <option value="1000-5000">₹1,000 - ₹5,000</option>
+                                                    <option value="5000-15000">₹5,000 - ₹15,000</option>
+                                                    <option value="15000-50000">₹15,000 - ₹50,000</option>
+                                                    <option value="50000+">₹50,000+</option>
+                                                </select>
+                                            </div>
+                                            <button className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                                                Save Changes
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // Brand Dashboard
+        const BrandDashboard = () => {
+            const { user } = React.useContext(AuthContext);
+            const [activeTab, setActiveTab] = useState('overview');
+            const [searchFilters, setSearchFilters] = useState({
+                category: '',
+                minFollowers: '',
+                maxBudget: '',
+                platform: ''
+            });
+
+            if (user?.status === 'pending') {
+                return (
+                    <div className="pt-16 min-h-screen bg-gray-900 flex items-center justify-center">
+                        <div className="max-w-md w-full mx-4">
+                            <div className="bg-black rounded-xl shadow-2xl p-8 border border-gray-800 text-center">
+                                <i className="fas fa-clock text-4xl text-yellow-500 mb-4"></i>
+                                <h1 className="text-2xl font-bold text-white mb-4">Account Pending Approval</h1>
+                                <p className="text-gray-400 mb-6">
+                                    Your brand account is currently under review by our admin team. 
+                                    You'll receive an email notification once your account is approved.
+                                </p>
+                                <p className="text-sm text-gray-500">
+                                    This usually takes 24-48 hours.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            const stats = {
+                activeCampaigns: 5,
+                totalSpent: 250000,
+                avgROI: 4.2,
+                partneredCreators: 12
+            };
+
+            const campaigns = [
+                { id: 1, creator: 'Maya Sharma', status: 'Active', budget: '₹15,000', platform: 'Instagram' },
+                { id: 2, creator: 'Raj Patel', status: 'Completed', budget: '₹25,000', platform: 'YouTube' },
+                { id: 3, creator: 'Priya Singh', status: 'Planning', budget: '₹20,000', platform: 'TikTok' }
+            ];
+
+            const filteredCreators = mockUsers.creators.filter(creator => {
+                if (creator.status !== 'approved') return false;
+                if (searchFilters.category && creator.category !== searchFilters.category) return false;
+                if (searchFilters.minFollowers && creator.instagramFollowers < parseInt(searchFilters.minFollowers)) return false;
+                if (searchFilters.platform && !creator.contentType.toLowerCase().includes(searchFilters.platform.toLowerCase())) return false;
+                return true;
+            });
+
+            return (
+                <div className="pt-16 min-h-screen bg-gray-900">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                        <div className="mb-8">
+                            <h1 className="text-3xl font-bold text-white mb-2">Welcome, {user?.companyName}!</h1>
+                            <p className="text-gray-400">Manage your brand campaigns and find creators</p>
+                        </div>
+
+                        {/* Stats Cards */}
+                        <div className="grid md:grid-cols-4 gap-6 mb-8">
+                            <div className="bg-black rounded-xl p-6 border border-gray-800">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-gray-400 text-sm">Active Campaigns</p>
+                                        <p className="text-2xl font-bold text-white">{stats.activeCampaigns}</p>
+                                    </div>
+                                    <i className="fas fa-bullhorn text-2xl text-blue-500"></i>
+                                </div>
+                            </div>
+                            
+                            <div className="bg-black rounded-xl p-6 border border-gray-800">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-gray-400 text-sm">Total Spent</p>
+                                        <p className="text-2xl font-bold text-white">₹{stats.totalSpent.toLocaleString()}</p>
+                                    </div>
+                                    <i className="fas fa-rupee-sign text-2xl text-green-500"></i>
+                                </div>
+                            </div>
+                            
+                            <div className="bg-black rounded-xl p-6 border border-gray-800">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-gray-400 text-sm">Average ROI</p>
+                                        <p className="text-2xl font-bold text-white">{stats.avgROI}x</p>
+                                    </div>
+                                    <i className="fas fa-chart-line text-2xl text-yellow-500"></i>
+                                </div>
+                            </div>
+                            
+                            <div className="bg-black rounded-xl p-6 border border-gray-800">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-gray-400 text-sm">Partnered Creators</p>
+                                        <p className="text-2xl font-bold text-white">{stats.partneredCreators}</p>
+                                    </div>
+                                    <i className="fas fa-users text-2xl text-purple-500"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Tabs */}
+                        <div className="bg-black rounded-xl border border-gray-800">
+                            <div className="border-b border-gray-800">
+                                <nav className="flex space-x-8 px-6">
+                                    {['overview', 'find-creators', 'campaigns', 'analytics'].map(tab => (
+                                        <button
+                                            key={tab}
+                                            onClick={() => setActiveTab(tab)}
+                                            className={`py-4 px-2 border-b-2 font-medium text-sm capitalize ${
+                                                activeTab === tab
+                                                    ? 'border-blue-500 text-blue-400'
+                                                    : 'border-transparent text-gray-400 hover:text-gray-300'
+                                            }`}
+                                        >
+                                            {tab.replace('-', ' ')}
+                                        </button>
+                                    ))}
+                                </nav>
+                            </div>
+
+                            <div className="p-6">
+                                {activeTab === 'overview' && (
+                                    <div>
+                                        <h3 className="text-xl font-semibold text-white mb-4">Recent Activity</h3>
+                                        <div className="space-y-4">
+                                            <div className="flex items-center p-4 bg-gray-800 rounded-lg">
+                                                <i className="fas fa-user-plus text-green-500 mr-3"></i>
+                                                <div>
+                                                    <p className="text-white">New creator Maya Sharma joined your campaign</p>
+                                                    <p className="text-gray-400 text-sm">Fashion campaign for winter collection</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center p-4 bg-gray-800 rounded-lg">
+                                                <i className="fas fa-chart-up text-blue-500 mr-3"></i>
+                                                <div>
+                                                    <p className="text-white">Campaign performance report available</p>
+                                                    <p className="text-gray-400 text-sm">ROI increased by 15% this month</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {activeTab === 'find-creators' && (
+                                    <div>
+                                        <h3 className="text-xl font-semibold text-white mb-6">Find Perfect Creators</h3>
+                                        
+                                        {/* Search Filters */}
+                                        <div className="bg-gray-800 rounded-lg p-6 mb-6">
+                                            <h4 className="text-lg font-medium text-white mb-4">Search Filters</h4>
+                                            <div className="grid md:grid-cols-4 gap-4">
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-300 mb-2">Category</label>
+                                                    <select
+                                                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500"
+                                                        value={searchFilters.category}
+                                                        onChange={(e) => setSearchFilters({...searchFilters, category: e.target.value})}
+                                                    >
+                                                        <option value="">All Categories</option>
+                                                        <option value="fashion">Fashion</option>
+                                                        <option value="tech">Technology</option>
+                                                        <option value="beauty">Beauty</option>
+                                                        <option value="fitness">Fitness</option>
+                                                        <option value="food">Food</option>
+                                                    </select>
+                                                </div>
+                                                
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-300 mb-2">Min Followers</label>
+                                                    <select
+                                                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500"
+                                                        value={searchFilters.minFollowers}
+                                                        onChange={(e) => setSearchFilters({...searchFilters, minFollowers: e.target.value})}
+                                                    >
+                                                        <option value="">Any</option>
+                                                        <option value="10000">10K+</option>
+                                                        <option value="50000">50K+</option>
+                                                        <option value="100000">100K+</option>
+                                                        <option value="500000">500K+</option>
+                                                    </select>
+                                                </div>
+                                                
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-300 mb-2">Platform</label>
+                                                    <select
+                                                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500"
+                                                        value={searchFilters.platform}
+                                                        onChange={(e) => setSearchFilters({...searchFilters, platform: e.target.value})}
+                                                    >
+                                                        <option value="">All Platforms</option>
+                                                        <option value="instagram">Instagram</option>
+                                                        <option value="youtube">YouTube</option>
+                                                        <option value="tiktok">TikTok</option>
+                                                        <option value="twitter">Twitter</option>
+                                                    </select>
+                                                </div>
+                                                
+                                                <div className="flex items-end">
+                                                    <button className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">
+                                                        <i className="fas fa-search mr-2"></i>
+                                                        Search
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Creator Results */}
+                                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                            {filteredCreators.map(creator => (
+                                                <div key={creator.id} className="bg-gray-800 rounded-lg p-6 card-hover">
+                                                    <div className="flex items-center mb-4">
+                                                        <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center mr-3">
+                                                            <i className="fas fa-user text-white"></i>
+                                                        </div>
+                                                        <div>
+                                                            <h4 className="text-lg font-semibold text-white">{creator.fullName}</h4>
+                                                            <p className="text-gray-400 text-sm">@{creator.username}</p>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <div className="space-y-2 mb-4">
+                                                        <div className="flex justify-between">
+                                                            <span className="text-gray-400">Category:</span>
+                                                            <span className="text-white capitalize">{creator.category}</span>
+                                                        </div>
+                                                        <div className="flex justify-between">
+                                                            <span className="text-gray-400">Instagram:</span>
+                                                            <span className="text-white">{creator.instagramFollowers?.toLocaleString()}</span>
+                                                        </div>
+                                                        <div className="flex justify-between">
+                                                            <span className="text-gray-400">Engagement:</span>
+                                                            <span className="text-white">{creator.avgEngagement}%</span>
+                                                        </div>
+                                                        <div className="flex justify-between">
+                                                            <span className="text-gray-400">Price Range:</span>
+                                                            <span className="text-white">₹{creator.priceRange}</span>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <p className="text-gray-300 text-sm mb-4">{creator.bio}</p>
+                                                    
+                                                    <button 
+                                                        onClick={() => alert(`Partnership request sent to ${creator.fullName}! Our admin will facilitate the connection.`)}
+                                                        className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+                                                    >
+                                                        Request Partnership
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {activeTab === 'campaigns' && (
+                                    <div>
+                                        <h3 className="text-xl font-semibold text-white mb-4">My Campaigns</h3>
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full">
+                                                <thead>
+                                                    <tr className="border-b border-gray-800">
+                                                        <th className="text-left py-3 px-4 text-gray-400">Creator</th>
+                                                        <th className="text-left py-3 px-4 text-gray-400">Status</th>
+                                                        <th className="text-left py-3 px-4 text-gray-400">Budget</th>
+                                                        <th className="text-left py-3 px-4 text-gray-400">Platform</th>
+                                                        <th className="text-left py-3 px-4 text-gray-400">Actions</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {campaigns.map(campaign => (
+                                                        <tr key={campaign.id} className="border-b border-gray-800">
+                                                            <td className="py-3 px-4 text-white">{campaign.creator}</td>
+                                                            <td className="py-3 px-4">
+                                                                <span className={`px-2 py-1 rounded-full text-xs ${
+                                                                    campaign.status === 'Active' ? 'bg-green-900 text-green-300' :
+                                                                    campaign.status === 'Completed' ? 'bg-blue-900 text-blue-300' :
+                                                                    'bg-yellow-900 text-yellow-300'
+                                                                }`}>
+                                                                    {campaign.status}
+                                                                </span>
+                                                            </td>
+                                                            <td className="py-3 px-4 text-white">{campaign.budget}</td>
+                                                            <td className="py-3 px-4 text-gray-400">{campaign.platform}</td>
+                                                            <td className="py-3 px-4">
+                                                                <button className="text-blue-400 hover:text-blue-300 mr-3">
+                                                                    <i className="fas fa-eye"></i>
+                                                                </button>
+                                                                <button className="text-gray-400 hover:text-gray-300">
+                                                                    <i className="fas fa-edit"></i>
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {activeTab === 'analytics' && (
+                                    <div>
+                                        <h3 className="text-xl font-semibold text-white mb-4">Campaign Analytics</h3>
+                                        <div className="grid md:grid-cols-2 gap-6">
+                                            <div className="bg-gray-800 rounded-lg p-6">
+                                                <h4 className="text-lg font-medium text-white mb-4">ROI Trends</h4>
+                                                <div className="h-32 flex items-center justify-center text-gray-400">
+                                                    <i className="fas fa-chart-line text-4xl"></i>
+                                                    <span className="ml-3">Chart visualization would go here</span>
+                                                </div>
+                                            </div>
+                                            <div className="bg-gray-800 rounded-lg p-6">
+                                                <h4 className="text-lg font-medium text-white mb-4">Campaign Performance</h4>
+                                                <div className="h-32 flex items-center justify-center text-gray-400">
+                                                    <i className="fas fa-chart-bar text-4xl"></i>
+                                                    <span className="ml-3">Chart visualization would go here</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // Home Page Component (Updated with dark theme)
+        const HomePage = ({ setCurrentPage }) => {
+            return (
+                <div className="pt-16">
+                    {/* Hero Section */}
+                    <section className="gradient-bg text-white py-20">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            <div className="text-center">
+                                <div className="animate-float mb-8">
+                                    <i className="fas fa-handshake text-6xl mb-4"></i>
+                                </div>
+                                <h1 className="text-4xl md:text-6xl font-bold mb-6">
+                                    Connect Creators with Brands
+                                </h1>
+                                <p className="text-xl md:text-2xl mb-8 max-w-3xl mx-auto">
+                                    The premier platform for authentic brand partnerships. We authenticate every deal to ensure quality collaborations.
+                                </p>
+                                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                                    <button 
+                                        onClick={() => setCurrentPage('register')}
+                                        className="bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
+                                    >
+                                        Join as Creator
+                                    </button>
+                                    <button 
+                                        onClick={() => setCurrentPage('register')}
+                                        className="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors"
+                                    >
+                                        Partner as Brand
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* Features Section */}
+                    <section className="py-20 bg-gray-900">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            <div className="text-center mb-16">
+                                <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+                                    Why Choose BRANDCORP?
+                                </h2>
+                                <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+                                    We provide a secure, authenticated platform for meaningful brand collaborations
+                                </p>
+                            </div>
+                            
+                            <div className="grid md:grid-cols-3 gap-8">
+                                <div className="bg-black p-8 rounded-xl shadow-lg card-hover text-center border border-gray-800">
+                                    <div className="bg-blue-900 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
+                                        <i className="fas fa-shield-alt text-2xl text-blue-400"></i>
+                                    </div>
+                                    <h3 className="text-xl font-bold mb-4 text-white">Admin Authentication</h3>
+                                    <p className="text-gray-400">Every partnership is verified and authenticated by our admin team for quality assurance.</p>
+                                </div>
+                                
+                                <div className="bg-black p-8 rounded-xl shadow-lg card-hover text-center border border-gray-800">
+                                    <div className="bg-blue-900 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
+                                        <i className="fas fa-chart-line text-2xl text-blue-400"></i>
+                                    </div>
+                                    <h3 className="text-xl font-bold mb-4 text-white">Detailed Analytics</h3>
+                                    <p className="text-gray-400">Comprehensive creator profiles with follower stats and engagement metrics.</p>
+                                </div>
+                                
+                                <div className="bg-black p-8 rounded-xl shadow-lg card-hover text-center border border-gray-800">
+                                    <div className="bg-blue-900 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
+                                        <i className="fas fa-lock text-2xl text-blue-400"></i>
+                                    </div>
+                                    <h3 className="text-xl font-bold mb-4 text-white">Privacy Protected</h3>
+                                    <p className="text-gray-400">Contact details remain private and secure, accessible only to admin.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* Stats Section */}
+                    <section className="py-20 bg-black">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            <div className="grid md:grid-cols-4 gap-8 text-center">
+                                <div>
+                                    <div className="text-4xl font-bold text-blue-500 mb-2">1000+</div>
+                                    <div className="text-gray-400">Active Creators</div>
+                                </div>
+                                <div>
+                                    <div className="text-4xl font-bold text-blue-500 mb-2">500+</div>
+                                    <div className="text-gray-400">Partner Brands</div>
+                                </div>
+                                <div>
+                                    <div className="text-4xl font-bold text-blue-500 mb-2">5000+</div>
+                                    <div className="text-gray-400">Successful Campaigns</div>
+                                </div>
+                                <div>
+                                    <div className="text-4xl font-bold text-blue-500 mb-2">98%</div>
+                                    <div className="text-gray-400">Satisfaction Rate</div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            );
+        };
+
+        // How It Works Component (Updated)
+        const HowItWorksPage = () => {
+            return (
+                <div className="pt-16 min-h-screen bg-gray-900">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                        <div className="text-center mb-16">
+                            <h1 className="text-4xl font-bold text-white mb-4">How BRANDCORP Works</h1>
+                            <p className="text-xl text-gray-400 max-w-3xl mx-auto">
+                                Our admin-authenticated platform ensures quality partnerships between creators and brands
+                            </p>
+                        </div>
+
+                        {/* Process Steps */}
+                        <div className="mb-16">
+                            <div className="grid md:grid-cols-3 gap-8">
+                                <div className="text-center">
+                                    <div className="bg-blue-900 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+                                        <span className="text-2xl font-bold text-blue-400">1</span>
+                                    </div>
+                                    <h3 className="text-xl font-bold mb-4 text-white">Registration & Verification</h3>
+                                    <p className="text-gray-400">Creators and brands register with detailed profiles. Our admin team verifies all applications for authenticity.</p>
+                                </div>
+                                
+                                <div className="text-center">
+                                    <div className="bg-blue-900 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+                                        <span className="text-2xl font-bold text-blue-400">2</span>
+                                    </div>
+                                    <h3 className="text-xl font-bold mb-4 text-white">Smart Matching</h3>
+                                    <p className="text-gray-400">Brands browse creator profiles with detailed analytics. They submit partnership requests with specific criteria to our admin.</p>
+                                </div>
+                                
+                                <div className="text-center">
+                                    <div className="bg-blue-900 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+                                        <span className="text-2xl font-bold text-blue-400">3</span>
+                                    </div>
+                                    <h3 className="text-xl font-bold mb-4 text-white">Admin Authentication</h3>
+                                    <p className="text-gray-400">Our admin reviews and authenticates every partnership, facilitating secure communication and payment processing.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* For Creators Section */}
+                        <div className="bg-black rounded-xl shadow-lg p-8 mb-8 border border-gray-800">
+                            <h2 className="text-3xl font-bold text-center mb-8 text-blue-400">For Creators</h2>
+                            <div className="grid md:grid-cols-2 gap-8">
+                                <div>
+                                    <h3 className="text-xl font-semibold mb-4 flex items-center text-white">
+                                        <i className="fas fa-user-plus mr-3 text-blue-400"></i>
+                                        Getting Started
+                                    </h3>
+                                    <ul className="space-y-3 text-gray-400">
+                                        <li className="flex items-start">
+                                            <i className="fas fa-check text-green-500 mr-2 mt-1"></i>
+                                            Complete detailed profile with social media links
+                                        </li>
+                                        <li className="flex items-start">
+                                            <i className="fas fa-check text-green-500 mr-2 mt-1"></i>
+                                            Provide accurate follower statistics and engagement rates
+                                        </li>
+                                        <li className="flex items-start">
+                                            <i className="fas fa-check text-green-500 mr-2 mt-1"></i>
+                                            Wait for admin verification (24-48 hours)
+                                        </li>
+                                        <li className="flex items-start">
+                                            <i className="fas fa-check text-green-500 mr-2 mt-1"></i>
+                                            Get matched with relevant brand opportunities
+                                        </li>
+                                    </ul>
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-semibold mb-4 flex items-center text-white">
+                                        <i className="fas fa-shield-alt mr-3 text-blue-400"></i>
+                                        Privacy & Security
+                                    </h3>
+                                    <ul className="space-y-3 text-gray-400">
+                                        <li className="flex items-start">
+                                            <i className="fas fa-lock text-green-500 mr-2 mt-1"></i>
+                                            Contact details remain private and secure
+                                        </li>
+                                        <li className="flex items-start">
+                                            <i className="fas fa-lock text-green-500 mr-2 mt-1"></i>
+                                            Only admin has access to phone and email
+                                        </li>
+                                        <li className="flex items-start">
+                                            <i className="fas fa-lock text-green-500 mr-2 mt-1"></i>
+                                            Brands see only public profile information
+                                        </li>
+                                        <li className="flex items-start">
+                                            <i className="fas fa-lock text-green-500 mr-2 mt-1"></i>
+                                            Secure payment processing through admin
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* For Brands Section */}
+                        <div className="bg-black rounded-xl shadow-lg p-8 border border-gray-800">
+                            <h2 className="text-3xl font-bold text-center mb-8 text-blue-400">For Brands</h2>
+                            <div className="grid md:grid-cols-2 gap-8">
+                                <div>
+                                    <h3 className="text-xl font-semibold mb-4 flex items-center text-white">
+                                        <i className="fas fa-search mr-3 text-blue-400"></i>
+                                        Finding Creators
+                                    </h3>
+                                    <ul className="space-y-3 text-gray-400">
+                                        <li className="flex items-start">
+                                            <i className="fas fa-check text-green-500 mr-2 mt-1"></i>
+                                            Browse verified creator profiles with detailed analytics
+                                        </li>
+                                        <li className="flex items-start">
+                                            <i className="fas fa-check text-green-500 mr-2 mt-1"></i>
+                                            Filter by follower count, engagement rate, and category
+                                        </li>
+                                        <li className="flex items-start">
+                                            <i className="fas fa-check text-green-500 mr-2 mt-1"></i>
+                                            Submit partnership requests with specific criteria
+                                        </li>
+                                        <li className="flex items-start">
+                                            <i className="fas fa-check text-green-500 mr-2 mt-1"></i>
+                                            Get admin assistance for creator matching
+                                        </li>
+                                    </ul>
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-semibold mb-4 flex items-center text-white">
+                                        <i className="fas fa-handshake mr-3 text-blue-400"></i>
+                                        Partnership Process
+                                    </h3>
+                                    <ul className="space-y-3 text-gray-400">
+                                        <li className="flex items-start">
+                                            <i className="fas fa-check text-green-500 mr-2 mt-1"></i>
+                                            Admin facilitates all communications
+                                        </li>
+                                        <li className="flex items-start">
+                                            <i className="fas fa-check text-green-500 mr-2 mt-1"></i>
+                                            Secure contract and payment processing
+                                        </li>
+                                        <li className="flex items-start">
+                                            <i className="fas fa-check text-green-500 mr-2 mt-1"></i>
+                                            Campaign monitoring and reporting
+                                        </li>
+                                        <li className="flex items-start">
+                                            <i className="fas fa-check text-green-500 mr-2 mt-1"></i>
+                                            Quality assurance and dispute resolution
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // Contact Component (Updated)
+        const ContactPage = () => {
+            const [formData, setFormData] = useState({
+                name: '',
+                email: '',
+                subject: '',
+                message: ''
+            });
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                alert('Thank you for your message! We will get back to you within 24 hours.');
+                setFormData({ name: '', email: '', subject: '', message: '' });
+            };
+
+            return (
+                <div className="pt-16 min-h-screen bg-gray-900">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                        <div className="text-center mb-16">
+                            <h1 className="text-4xl font-bold text-white mb-4">Contact Us</h1>
+                            <p className="text-xl text-gray-400">Get in touch with our team for any questions or support</p>
+                        </div>
+
+                        <div className="grid lg:grid-cols-2 gap-12">
+                            {/* Contact Information */}
+                            <div>
+                                <div className="bg-black rounded-xl shadow-lg p-8 border border-gray-800">
+                                    <h2 className="text-2xl font-bold mb-6 text-white">Get in Touch</h2>
+                                    
+                                    <div className="space-y-6">
+                                        <div className="flex items-start">
+                                            <div className="bg-blue-900 w-12 h-12 rounded-full flex items-center justify-center mr-4">
+                                                <i className="fas fa-phone text-blue-400"></i>
+                                            </div>
+                                            <div>
+                                                <h3 className="font-semibold text-white">Phone</h3>
+                                                <p className="text-gray-400">+91 9505070709</p>
+                                                <p className="text-sm text-gray-500">Mon-Fri 9AM-6PM IST</p>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="flex items-start">
+                                            <div className="bg-blue-900 w-12 h-12 rounded-full flex items-center justify-center mr-4">
+                                                <i className="fas fa-envelope text-blue-400"></i>
+                                            </div>
+                                            <div>
+                                                <h3 className="font-semibold text-white">Email</h3>
+                                                <p className="text-gray-400">hello@brandcorp.com</p>
+                                                <p className="text-sm text-gray-500">We'll respond within 24 hours</p>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="flex items-start">
+                                            <div className="bg-blue-900 w-12 h-12 rounded-full flex items-center justify-center mr-4">
+                                                <i className="fas fa-map-marker-alt text-blue-400"></i>
+                                            </div>
+                                            <div>
+                                                <h3 className="font-semibold text-white">Office</h3>
+                                                <p className="text-gray-400">Mumbai, India</p>
+                                                <p className="text-sm text-gray-500">Available for meetings by appointment</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-8 pt-8 border-t border-gray-800">
+                                        <h3 className="font-semibold text-white mb-4">Follow Us</h3>
+                                        <div className="flex space-x-4">
+                                            <a href="#" className="social-icon bg-blue-900 w-10 h-10 rounded-full flex items-center justify-center text-blue-400 hover:bg-blue-800">
+                                                <i className="fab fa-instagram"></i>
+                                            </a>
+                                            <a href="#" className="social-icon bg-blue-900 w-10 h-10 rounded-full flex items-center justify-center text-blue-400 hover:bg-blue-800">
+                                                <i className="fab fa-twitter"></i>
+                                            </a>
+                                            <a href="#" className="social-icon bg-blue-900 w-10 h-10 rounded-full flex items-center justify-center text-blue-400 hover:bg-blue-800">
+                                                <i className="fab fa-linkedin"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Contact Form */}
+                            <div>
+                                <div className="bg-black rounded-xl shadow-lg p-8 border border-gray-800">
+                                    <h2 className="text-2xl font-bold mb-6 text-white">Send us a Message</h2>
+                                    
+                                    <form onSubmit={handleSubmit} className="space-y-6">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-300 mb-2">Name *</label>
+                                            <input
+                                                type="text"
+                                                required
+                                                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                value={formData.name}
+                                                onChange={(e) => setFormData({...formData, name: e.target.value})}
+                                            />
+                                        </div>
+                                        
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-300 mb-2">Email *</label>
+                                            <input
+                                                type="email"
+                                                required
+                                                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                value={formData.email}
+                                                onChange={(e) => setFormData({...formData, email: e.target.value})}
+                                            />
+                                        </div>
+                                        
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-300 mb-2">Subject *</label>
+                                            <select
+                                                required
+                                                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                value={formData.subject}
+                                                onChange={(e) => setFormData({...formData, subject: e.target.value})}
+                                            >
+                                                <option value="">Select Subject</option>
+                                                <option value="creator-support">Creator Support</option>
+                                                <option value="brand-inquiry">Brand Inquiry</option>
+                                                <option value="partnership">Partnership Opportunity</option>
+                                                <option value="technical-issue">Technical Issue</option>
+                                                <option value="general">General Question</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-300 mb-2">Message *</label>
+                                            <textarea
+                                                required
+                                                rows="5"
+                                                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                value={formData.message}
+                                                onChange={(e) => setFormData({...formData, message: e.target.value})}
+                                                placeholder="Tell us how we can help you..."
+                                            ></textarea>
+                                        </div>
+                                        
+                                        <button
+                                            type="submit"
+                                            className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+                                        >
+                                            Send Message
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // Footer Component (Updated)
+        const Footer = () => {
+            return (
+                <footer className="bg-black text-white py-12 border-t border-gray-800">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div className="grid md:grid-cols-4 gap-8">
+                            <div>
+                                <div className="flex items-center mb-4">
+                                    <i className="fas fa-link text-2xl text-blue-400 mr-2"></i>
+                                    <span className="text-2xl font-bold">BRANDCORP</span>
+                                </div>
+                                <p className="text-gray-400 mb-4">
+                                    Connecting authentic creators with quality brands through our admin-verified platform.
+                                </p>
+                                <div className="flex space-x-4">
+                                    <a href="#" className="text-gray-400 hover:text-blue-400 transition-colors">
+                                        <i className="fab fa-instagram text-xl"></i>
+                                    </a>
+                                    <a href="#" className="text-gray-400 hover:text-blue-400 transition-colors">
+                                        <i className="fab fa-twitter text-xl"></i>
+                                    </a>
+                                    <a href="#" className="text-gray-400 hover:text-blue-400 transition-colors">
+                                        <i className="fab fa-linkedin text-xl"></i>
+                                    </a>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <h3 className="text-lg font-semibold mb-4">For Creators</h3>
+                                <ul className="space-y-2 text-gray-400">
+                                    <li><a href="#" className="hover:text-white transition-colors">Join Platform</a></li>
+                                    <li><a href="#" className="hover:text-white transition-colors">Creator Guidelines</a></li>
+                                    <li><a href="#" className="hover:text-white transition-colors">Success Stories</a></li>
+                                    <li><a href="#" className="hover:text-white transition-colors">Support</a></li>
+                                </ul>
+                            </div>
+                            
+                            <div>
+                                <h3 className="text-lg font-semibold mb-4">For Brands</h3>
+                                <ul className="space-y-2 text-gray-400">
+                                    <li><a href="#" className="hover:text-white transition-colors">Partner With Us</a></li>
+                                    <li><a href="#" className="hover:text-white transition-colors">Case Studies</a></li>
+                                    <li><a href="#" className="hover:text-white transition-colors">Pricing</a></li>
+                                    <li><a href="#" className="hover:text-white transition-colors">Brand Safety</a></li>
+                                </ul>
+                            </div>
+                            
+                            <div>
+                                <h3 className="text-lg font-semibold mb-4">Company</h3>
+                                <ul className="space-y-2 text-gray-400">
+                                    <li><a href="#" className="hover:text-white transition-colors">About Us</a></li>
+                                    <li><a href="#" className="hover:text-white transition-colors">Privacy Policy</a></li>
+                                    <li><a href="#" className="hover:text-white transition-colors">Terms of Service</a></li>
+                                    <li><a href="#" className="hover:text-white transition-colors">Contact</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
+                            <p>&copy; 2024 BRANDCORP. All rights reserved. | Phone: +91 9505070709</p>
+                        </div>
+                    </div>
+                </footer>
+            );
+        };
+
+        // Main App Component
+        const App = () => {
+            const [currentPage, setCurrentPage] = useState('home');
+            const { user, userType } = React.useContext(AuthContext);
+
+            const renderPage = () => {
+                if (user && currentPage === 'dashboard') {
+                    if (userType === 'admins') return <AdminDashboard />;
+                    return userType === 'creators' ? <CreatorDashboard /> : <BrandDashboard />;
+                }
+
+                switch(currentPage) {
+                    case 'home':
+                        return <HomePage setCurrentPage={setCurrentPage} />;
+                    case 'login':
+                        return <LoginPage setCurrentPage={setCurrentPage} />;
+                    case 'register':
+                        return <RegisterPage setCurrentPage={setCurrentPage} />;
+                    case 'how-it-works':
+                        return <HowItWorksPage />;
+                    case 'contact':
+                        return <ContactPage />;
+                    case 'profile':
+                        return user ? (
+                            userType === 'admins' ? <AdminDashboard /> :
+                            userType === 'creators' ? <CreatorDashboard /> : <BrandDashboard />
+                        ) : <LoginPage setCurrentPage={setCurrentPage} />;
+                    default:
+                        return <HomePage setCurrentPage={setCurrentPage} />;
+                }
+            };
+
+            return (
+                <div className="min-h-screen bg-gray-900">
+                    <Navigation currentPage={currentPage} setCurrentPage={setCurrentPage} />
+                    {renderPage()}
+                    <Footer />
+                </div>
+            );
+        };
+
+        const AppWithAuth = () => (
+            <AuthProvider>
+                <App />
+            </AuthProvider>
+        );
+
+        ReactDOM.render(<AppWithAuth />, document.getElementById('root'));
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9813236171ff9a93',t:'MTc1ODIyMjU3Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
